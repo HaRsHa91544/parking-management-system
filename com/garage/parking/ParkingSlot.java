@@ -68,7 +68,7 @@ public class ParkingSlot {
     }
     
     // Updating parking fee.
-    void updateParkingFee()
+    public void updateParkingFee()
     {
       try {
         // 1. Parse the entry time string back into a LocalTime object

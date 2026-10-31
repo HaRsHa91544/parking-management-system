@@ -1,9 +1,10 @@
 package com.garage;
 
 import com.garage.utils.CurrentTime;
-import com.garage.parking.*; 
+import com.garage.parking.*;
 
 import java.util.Scanner;
+import com.garage.threads.UpdateFeeThread;
 
 public class Main {
   public static void main(String[] args) {
@@ -12,6 +13,10 @@ public class Main {
 
     // 3 Floors, 5 Slots. null = Vacant, ParkingSlot = Occupied
     ParkingSlot[][] parkingGrid = new ParkingSlot[3][5];
+
+    UpdateFeeThread feeUpdater = new UpdateFeeThread(parkingGrid);
+    Thread feeUpdateThread = new Thread(feeUpdater);
+    feeUpdateThread.start();
 
     while (true) {
       System.out.println("\n--- PARKING LAYOUT ---");
@@ -53,7 +58,8 @@ public class Main {
         // 2. Ask if it's an EV
         System.out.print("Is this an EV? (yes/no): ");
         String isEvInput = scanner.nextLine();
-        boolean isEV = isEvInput.equalsIgnoreCase("yes") || isEvInput.equalsIgnoreCase("y");
+        boolean isEV = isEvInput.equalsIgnoreCase("yes") || isEvInput.equalsIgnoreCase("y")
+            || isEvInput.equalsIgnoreCase("s");
 
         int floor = -1;
 
@@ -74,22 +80,24 @@ public class Main {
 
         // 4. Validate and Park
         if (floor >= 0 && floor < 3 && slot >= 0 && slot < 5) {
-          if (parkingGrid[floor][slot] == null) {
-            String entryTime = CurrentTime.getTime();
+          synchronized (parkingGrid) {
+            if (parkingGrid[floor][slot] == null) {
+              String entryTime = CurrentTime.getTime();
 
-            // Create the object (EVReservedSlot extends ParkingSlot, so it fits in the
-            // array)
-            if (isEV) {
-              EVReservedSlot evCar = new EVReservedSlot(vehicle, entryTime);
-              parkingGrid[floor][slot] = evCar;
-              evCar.startCharging();
+              // Create the object (EVReservedSlot extends ParkingSlot, so it fits in the
+              // array)
+              if (isEV) {
+                EVReservedSlot evCar = new EVReservedSlot(vehicle, entryTime);
+                parkingGrid[floor][slot] = evCar;
+                evCar.startCharging();
+              } else {
+                parkingGrid[floor][slot] = new ParkingSlot().carIn(vehicle);
+              }
+
+              System.out.println("Parked " + vehicle + " at Floor " + (floor + 1) + ", Slot " + (slot + 1));
             } else {
-              parkingGrid[floor][slot] = new ParkingSlot().carIn(vehicle);
+              System.out.println("Slot is occupied!");
             }
-
-            System.out.println("Parked " + vehicle + " at Floor " + (floor + 1) + ", Slot " + (slot + 1));
-          } else {
-            System.out.println("Slot is occupied!");
           }
         } else {
           System.out.println("Invalid Floor or Slot!");
@@ -103,28 +111,33 @@ public class Main {
         scanner.nextLine(); // clear buffer
 
         if (floor >= 0 && floor < 3 && slot >= 0 && slot < 5) {
-          ParkingSlot car = parkingGrid[floor][slot];
+          synchronized (parkingGrid) {
 
-          if (car != null) {
-            // If it's an EV, stop charging first
-            if (car instanceof EVReservedSlot) {
-              ((EVReservedSlot) car).stopCharging();
+            ParkingSlot car = parkingGrid[floor][slot];
+
+            if (car != null) {
+
+              if (car instanceof EVReservedSlot) {
+                ((EVReservedSlot) car).stopCharging();
+              }
+
+              fileLogger.processCarExit(car);
+
+              parkingGrid[floor][slot] = null;
+
+              System.out.println("Car exited and bill saved to receipts.txt.");
+
+            } else {
+              System.out.println("No car at this slot!");
             }
-
-            // Pass to TicketablePark which calls carOut() and saves to file
-            fileLogger.processCarExit(car);
-
-            // Free the slot
-            parkingGrid[floor][slot] = null;
-            System.out.println("Car exited and bill saved to receipts.txt.");
-          } else {
-            System.out.println("No car at this slot!");
           }
         } else {
           System.out.println("Invalid Floor or Slot!");
         }
+      }
 
-      } else if (choice == 3) {
+      else if (choice == 3) {
+        feeUpdateThread.interrupt(); // Stop the fee update thread
         System.out.println("Goodbye!");
         break;
       } else {
