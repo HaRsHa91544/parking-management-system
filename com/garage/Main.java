@@ -17,7 +17,7 @@ public class Main {
       System.out.println("\n--- PARKING LAYOUT ---");
 
       // Print top headers (Slots)
-      System.out.print("          ");
+      System.out.print("               ");
       for (int s = 0; s < 5; s++) {
         System.out.printf("  S%d   ", (s + 1));
       }
@@ -31,7 +31,7 @@ public class Main {
 
         for (int s = 0; s < 5; s++) {
           if (parkingGrid[f][s] == null) {
-            System.out.printf("[ S%d ] ", (s + 1));
+            System.out.printf("[ S-%d ] ", (s + 1));
           } else {
             System.out.printf("[ OCC ] ");
           }
@@ -87,7 +87,7 @@ public class Main {
               parkingGrid[floor][slot] = new ParkingSlot().carIn(vehicle);
             }
 
-            System.out.println("✅ Parked " + vehicle + " at Floor " + (floor + 1) + ", Slot " + (slot + 1));
+            System.out.println("Parked " + vehicle + " at Floor " + (floor + 1) + ", Slot " + (slot + 1));
           } else {
             System.out.println("Slot is occupied!");
           }
@@ -116,7 +116,7 @@ public class Main {
 
             // Free the slot
             parkingGrid[floor][slot] = null;
-            System.out.println("✅ Car exited and bill saved to receipts.txt.");
+            System.out.println("Car exited and bill saved to receipts.txt.");
           } else {
             System.out.println("No car at this slot!");
           }

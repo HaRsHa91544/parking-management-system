@@ -8,11 +8,11 @@ public class EVReservedSlot extends ParkingSlot {
 
     public void startCharging()
     {
-        System.out.println("\n\n🔋 Charger Connected.");
+        System.out.println("\n\nCharger Connected.");
     }
 
     public void stopCharging()
     {
-        System.out.println("\n\n🔋 Charger Disconnected.");
+        System.out.println("\n\nCharger Disconnected.");
     }
 }
