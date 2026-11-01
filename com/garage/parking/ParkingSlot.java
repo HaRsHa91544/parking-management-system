@@ -61,7 +61,7 @@ public class ParkingSlot {
         "Entry Time    : %s\n" +
         "Exit Time     : %s\n" +
         "----------------------------------------\n" +
-        "TOTAL FEE     : ₹ %d\n" +
+        "TOTAL FEE     : Rs. %d\n" +
         "========================================\n",
         this.ticketId, this.vehicleNumber, this.entryTime, this.exitTime, this.fee
       );
