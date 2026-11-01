@@ -1,12 +1,13 @@
 package com.garage.utils;
 
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class CurrentTime {
   public static String getTime() {
-    LocalTime now = LocalTime.now();
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+    LocalDateTime now = LocalDateTime.now();
+    // Format: YYYY-MM-DD HH:mm:ss
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     return now.format(formatter);
   }
 }

@@ -8,14 +8,20 @@ import com.garage.threads.UpdateFeeThread;
 
 import com.garage.exceptions.ParkingSlotsFullException;
 
-
 public class Main {
   public static void main(String[] args) {
     Scanner scanner = new Scanner(System.in);
     TicketablePark fileLogger = new TicketablePark();
 
-    // 3 Floors, 5 Slots. null = Vacant, ParkingSlot = Occupied
-    ParkingSlot[][] parkingGrid = new ParkingSlot[3][5];
+    // Manage number of floors and slots per floor in garage here!
+    int TOTAL_FLOORS = 2; // Minimum 2 must be there.
+    int TOTAL_SLOTS_PER_FLOOR = 2;
+
+    // 2D - Array of slots.
+    ParkingSlot[][] parkingGrid = new ParkingSlot[TOTAL_FLOORS][TOTAL_SLOTS_PER_FLOOR];
+
+    // EV reserved floor, last floor in all garages.
+    int EV_FLOOR_INDEX = TOTAL_FLOORS - 1;
 
     UpdateFeeThread feeUpdater = new UpdateFeeThread(parkingGrid);
     Thread feeUpdateThread = new Thread(feeUpdater);
@@ -26,18 +32,21 @@ public class Main {
 
       // Print top headers (Slots)
       System.out.print("               ");
-      for (int s = 0; s < 5; s++) {
+      for (int s = 0; s < TOTAL_SLOTS_PER_FLOOR; s++) {
         System.out.printf("  S%d   ", (s + 1));
       }
       System.out.println();
 
       // Print rows (Floors)
-      for (int f = 0; f < 3; f++) {
-        // Just visual indicator for EV floor
-        String floorLabel = (f == 2) ? "Floor 3 (EV) | " : String.format("Floor %d      | ", (f + 1));
+      for (int f = 0; f < TOTAL_FLOORS; f++) {
+
+        // Visual indicator for EV floor
+        String floorLabel = (f == EV_FLOOR_INDEX) ? String.format("Floor %d (EV) | ", (f + 1))
+            : String.format("Floor %d      | ", (f + 1));
+
         System.out.print(floorLabel);
 
-        for (int s = 0; s < 5; s++) {
+        for (int s = 0; s < TOTAL_SLOTS_PER_FLOOR; s++) {
           if (parkingGrid[f][s] == null) {
             System.out.printf("[ S-%d ] ", (s + 1));
           } else {
@@ -55,81 +64,76 @@ public class Main {
 
       if (choice == 1) {
 
+        try {
+          // Check whether the entire garage is full
+          if (isGarageFull(parkingGrid)) {
+            throw new ParkingSlotsFullException("Parking Garage is Full!");
+          }
 
-            try {
-            // Check whether the entire garage is full
-            if (isGarageFull(parkingGrid)) {
-                throw new ParkingSlotsFullException("Parking Garage is Full!");
-            }
+          // 1. Get vehicle number
+          System.out.print("Enter Vehicle Number: ");
+          String vehicle = scanner.nextLine();
 
-            // 1. Get vehicle number
-            System.out.print("Enter Vehicle Number: ");
-            String vehicle = scanner.nextLine();
+          // 2. Check whether it is an EV
+          System.out.print("Is this an EV? (yes/no): ");
+          String isEvInput = scanner.nextLine();
 
-            // 2. Check whether it is an EV
-            System.out.print("Is this an EV? (yes/no): ");
-            String isEvInput = scanner.nextLine();
+          boolean isEV = isEvInput.equalsIgnoreCase("yes")
+              || isEvInput.equalsIgnoreCase("y");
 
-            boolean isEV = isEvInput.equalsIgnoreCase("yes")
-                    || isEvInput.equalsIgnoreCase("y");
+          int floor = -1;
 
-            int floor = -1;
-
-            // 3. Select floor
-            if (isEV) {
-                System.out.println("-> EVs can only park on Floor 3.");
-                floor = 2;
-            } else {
-                System.out.println("-> Normal cars can only park on Floors 1 and 2.");
-                System.out.print("Enter Floor (1 or 2): ");
-                floor = scanner.nextInt() - 1;
-                scanner.nextLine();
-            }
-
-            // 4. Select slot
-            System.out.print("Enter Slot (1-5): ");
-            int slot = scanner.nextInt() - 1;
+          // 3. Select floor
+          if (isEV) {
+            System.out.println("-> EVs can only park on Floor " + (EV_FLOOR_INDEX + 1) + ".");
+            floor = EV_FLOOR_INDEX; // Uses the dynamic EV floor
+          } else {
+            System.out.println("-> Normal cars can only park on Floors 1 to " + EV_FLOOR_INDEX + ".");
+            System.out.print("Enter Floor (1 to " + EV_FLOOR_INDEX + "): ");
+            floor = scanner.nextInt() - 1;
             scanner.nextLine();
+          }
 
-            // 5. Validate floor and slot
-            boolean validFloor = isEV ? floor == 2 : floor >= 0 && floor <= 1;
+          // 4. Select slot
+          System.out.print("Enter Slot (1-" + TOTAL_SLOTS_PER_FLOOR + "): ");
+          int slot = scanner.nextInt() - 1;
+          scanner.nextLine();
 
-            if (validFloor && slot >= 0 && slot < 5) {
+          // 5. Validate floor and slot
+          boolean validFloor = isEV ? (floor == EV_FLOOR_INDEX) : (floor >= 0 && floor < EV_FLOOR_INDEX);
+          if (validFloor && slot >= 0 && slot < TOTAL_SLOTS_PER_FLOOR) {
 
-                synchronized (parkingGrid) {
+            synchronized (parkingGrid) {
 
-                    if (parkingGrid[floor][slot] == null) {
+              if (parkingGrid[floor][slot] == null) {
 
-                        String entryTime = CurrentTime.getTime();
+                String entryTime = CurrentTime.getTime();
 
-                        // 6. Create appropriate object
-                        if (isEV) {
-                            EVReservedSlot evCar = new EVReservedSlot(vehicle, entryTime);
-                            parkingGrid[floor][slot] = evCar;
-                            evCar.startCharging();
-                        } else {
-                            parkingGrid[floor][slot] = new ParkingSlot().carIn(vehicle);
-                        }
-
-                        System.out.println("Parked " + vehicle
-                                + " at Floor " + (floor + 1)
-                                + ", Slot " + (slot + 1));
-
-                    } else {
-                        System.out.println("Slot is occupied!");
-                    }
+                // 6. Create appropriate object
+                if (isEV) {
+                  EVReservedSlot evCar = new EVReservedSlot(vehicle, entryTime);
+                  parkingGrid[floor][slot] = evCar;
+                  evCar.startCharging();
+                } else {
+                  parkingGrid[floor][slot] = new ParkingSlot().carIn(vehicle);
                 }
 
-            } else {
-                System.out.println("Invalid Floor or Slot!");
+                System.out.println("Parked " + vehicle
+                    + " at Floor " + (floor + 1)
+                    + ", Slot " + (slot + 1));
+
+              } else {
+                System.out.println("Slot is occupied!");
+              }
             }
 
+          } else {
+            System.out.println("Invalid Floor or Slot!");
+          }
+
         } catch (ParkingSlotsFullException e) {
-            System.out.println(e.getMessage());
+          System.out.println(e.getMessage());
         }
-
-
-
 
         // // 1. Take car number first
         // System.out.print("Enter Vehicle Number: ");
@@ -138,20 +142,21 @@ public class Main {
         // // 2. Ask if it's an EV
         // System.out.print("Is this an EV? (yes/no): ");
         // String isEvInput = scanner.nextLine();
-        // boolean isEV = isEvInput.equalsIgnoreCase("yes") || isEvInput.equalsIgnoreCase("y")
-        //     || isEvInput.equalsIgnoreCase("s");
+        // boolean isEV = isEvInput.equalsIgnoreCase("yes") ||
+        // isEvInput.equalsIgnoreCase("y")
+        // || isEvInput.equalsIgnoreCase("s");
 
         // int floor = -1;
 
         // // 3. Show only respective floors
         // if (isEV) {
-        //   System.out.println("-> EVs can only park on Floor 3.");
-        //   floor = 2; // 0-based index for Floor 3
+        // System.out.println("-> EVs can only park on Floor 3.");
+        // floor = 2; // 0-based index for Floor 3
         // } else {
-        //   System.out.println("-> Normal cars can only park on Floors 1 and 2.");
-        //   System.out.print("Enter Floor (1 or 2): ");
-        //   floor = scanner.nextInt() - 1;
-        //   scanner.nextLine(); // clear buffer
+        // System.out.println("-> Normal cars can only park on Floors 1 and 2.");
+        // System.out.print("Enter Floor (1 or 2): ");
+        // floor = scanner.nextInt() - 1;
+        // scanner.nextLine(); // clear buffer
         // }
 
         // System.out.print("Enter Slot (1-5): ");
@@ -161,37 +166,40 @@ public class Main {
         // // 4. Validate and Park
         // if (floor >= 0 && floor < 3 && slot >= 0 && slot < 5) {
 
-        //   synchronized (parkingGrid) {
-        //     if (parkingGrid[floor][slot] == null) {
-        //       String entryTime = CurrentTime.getTime();
+        // synchronized (parkingGrid) {
+        // if (parkingGrid[floor][slot] == null) {
+        // String entryTime = CurrentTime.getTime();
 
-        //       // Create the object (EVReservedSlot extends ParkingSlot, so it fits in the
-        //       // array)
-        //       if (isEV) {
-        //         EVReservedSlot evCar = new EVReservedSlot(vehicle, entryTime);
-        //         parkingGrid[floor][slot] = evCar;
-        //         evCar.startCharging();
-        //       } else {
-        //         parkingGrid[floor][slot] = new ParkingSlot().carIn(vehicle);
-        //       }
-
-        //       System.out.println("Parked " + vehicle + " at Floor " + (floor + 1) + ", Slot " + (slot + 1));
-        //     } else {
-        //       System.out.println("Slot is occupied!");
-        //     }
-        //   }
+        // // Create the object (EVReservedSlot extends ParkingSlot, so it fits in the
+        // // array)
+        // if (isEV) {
+        // EVReservedSlot evCar = new EVReservedSlot(vehicle, entryTime);
+        // parkingGrid[floor][slot] = evCar;
+        // evCar.startCharging();
         // } else {
-        //   System.out.println("Invalid Floor or Slot!");
+        // parkingGrid[floor][slot] = new ParkingSlot().carIn(vehicle);
+        // }
+
+        // System.out.println("Parked " + vehicle + " at Floor " + (floor + 1) + ", Slot
+        // " + (slot + 1));
+        // } else {
+        // System.out.println("Slot is occupied!");
+        // }
+        // }
+        // } else {
+        // System.out.println("Invalid Floor or Slot!");
         // }
 
       } else if (choice == 2) {
-        System.out.print("Enter Floor to exit (1-3): ");
+        System.out.print("Enter Floor to exit (1-" + TOTAL_FLOORS + "): ");
         int floor = scanner.nextInt() - 1;
-        System.out.print("Enter Slot to exit (1-5): ");
+        
+        System.out.print("Enter Slot to exit (1-" + TOTAL_SLOTS_PER_FLOOR + "): ");
         int slot = scanner.nextInt() - 1;
         scanner.nextLine(); // clear buffer
 
-        if (floor >= 0 && floor < 3 && slot >= 0 && slot < 5) {
+
+        if (floor >= 0 && floor < TOTAL_FLOORS && slot >= 0 && slot < TOTAL_SLOTS_PER_FLOOR) {
           synchronized (parkingGrid) {
 
             ParkingSlot car = parkingGrid[floor][slot];
@@ -228,19 +236,18 @@ public class Main {
     scanner.close();
   }
 
-
   public static boolean isGarageFull(ParkingSlot[][] grid) {
 
-      for (int i = 0; i < grid.length; i++) {
-          for (int j = 0; j < grid[i].length; j++) {
+    for (int i = 0; i < grid.length; i++) {
+      for (int j = 0; j < grid[i].length; j++) {
 
-              if (grid[i][j] == null) {
-                  return false;
-              }
-          }
+        if (grid[i][j] == null) {
+          return false;
+        }
       }
+    }
 
-      return true;
+    return true;
   }
-  
+
 }

@@ -1,6 +1,6 @@
 package com.garage.parking;
 
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.Duration;
 
@@ -72,11 +72,11 @@ public class ParkingSlot {
     {
       try {
         // 1. Parse the entry time string back into a LocalTime object
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-        LocalTime entry = LocalTime.parse(this.entryTime, formatter);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime entry = LocalDateTime.parse(this.entryTime, formatter);
         
         // 2. Get current time (or you can parse this.exitTime)
-        LocalTime exit = LocalTime.now();
+        LocalDateTime exit = LocalDateTime.parse(this.exitTime, formatter);        
 
         // 3. Calculate difference in seconds
         long secondsParked = Duration.between(entry, exit).getSeconds();
