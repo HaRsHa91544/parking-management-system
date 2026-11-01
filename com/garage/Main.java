@@ -135,61 +135,6 @@ public class Main {
           System.out.println(e.getMessage());
         }
 
-        // // 1. Take car number first
-        // System.out.print("Enter Vehicle Number: ");
-        // String vehicle = scanner.nextLine();
-
-        // // 2. Ask if it's an EV
-        // System.out.print("Is this an EV? (yes/no): ");
-        // String isEvInput = scanner.nextLine();
-        // boolean isEV = isEvInput.equalsIgnoreCase("yes") ||
-        // isEvInput.equalsIgnoreCase("y")
-        // || isEvInput.equalsIgnoreCase("s");
-
-        // int floor = -1;
-
-        // // 3. Show only respective floors
-        // if (isEV) {
-        // System.out.println("-> EVs can only park on Floor 3.");
-        // floor = 2; // 0-based index for Floor 3
-        // } else {
-        // System.out.println("-> Normal cars can only park on Floors 1 and 2.");
-        // System.out.print("Enter Floor (1 or 2): ");
-        // floor = scanner.nextInt() - 1;
-        // scanner.nextLine(); // clear buffer
-        // }
-
-        // System.out.print("Enter Slot (1-5): ");
-        // int slot = scanner.nextInt() - 1;
-        // scanner.nextLine(); // clear buffer
-
-        // // 4. Validate and Park
-        // if (floor >= 0 && floor < 3 && slot >= 0 && slot < 5) {
-
-        // synchronized (parkingGrid) {
-        // if (parkingGrid[floor][slot] == null) {
-        // String entryTime = CurrentTime.getTime();
-
-        // // Create the object (EVReservedSlot extends ParkingSlot, so it fits in the
-        // // array)
-        // if (isEV) {
-        // EVReservedSlot evCar = new EVReservedSlot(vehicle, entryTime);
-        // parkingGrid[floor][slot] = evCar;
-        // evCar.startCharging();
-        // } else {
-        // parkingGrid[floor][slot] = new ParkingSlot().carIn(vehicle);
-        // }
-
-        // System.out.println("Parked " + vehicle + " at Floor " + (floor + 1) + ", Slot
-        // " + (slot + 1));
-        // } else {
-        // System.out.println("Slot is occupied!");
-        // }
-        // }
-        // } else {
-        // System.out.println("Invalid Floor or Slot!");
-        // }
-
       } else if (choice == 2) {
         System.out.print("Enter Floor to exit (1-" + TOTAL_FLOORS + "): ");
         int floor = scanner.nextInt() - 1;
